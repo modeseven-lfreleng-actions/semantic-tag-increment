@@ -1,0 +1,35 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2025 The Linux Foundation
+
+name: 'CodeQL'
+# Named codeql.yml NOT codeql.yaml (GitHub security UI will ignore it)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['main', 'master']
+    paths:
+      - '!.github/**'
+      - '!.docs/**'
+  schedule:
+    - cron: '40 4 * * 0'
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  scan:
+    name: 'Audit Repository'
+    # yamllint disable-line rule:line-length
+    uses: lfit/releng-reusable-workflows/.github/workflows/reuse-python-codeql.yaml@8c3cf221da0e47955647647c9a254c1f807081ce # v0.2.18
+    permissions:
+      security-events: write
+      # required to fetch internal or private CodeQL packs
+      packages: read
+      # only required for workflows in private repositories
+      actions: read
+      contents: read
