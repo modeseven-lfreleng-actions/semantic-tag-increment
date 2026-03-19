@@ -46,7 +46,7 @@ pip install semantic-tag-increment
 ```bash
 git clone https://github.com/your-org/semantic-tag-increment.git
 cd semantic-tag-increment
-pip install .
+uv pip install --system .
 ```
 
 ### Development Installation
@@ -54,7 +54,7 @@ pip install .
 ```bash
 git clone https://github.com/your-org/semantic-tag-increment.git
 cd semantic-tag-increment
-pip install -e .
+uv pip install --system -e .
 ```
 
 ## Usage
@@ -315,29 +315,39 @@ git clone https://github.com/your-org/semantic-tag-increment.git
 cd semantic-tag-increment
 
 # Install in development mode
-pip install -e .
+uv pip install --system -e .
 
 # Install development dependencies
-pip install -e ".[dev]"
+uv sync --all-extras
 
 # Set up pre-commit hooks
 pre-commit install
 ```
 
+### Dependency management
+
+- **Update dependencies**: Use `uv lock --upgrade` to rebuild
+  and update the `uv.lock` file with the latest compatible
+  versions
+- **Add new dependencies**: Add to `pyproject.toml` then run
+  `uv lock` to update the lock file
+- **Install from lock file**: `uv pip install --system .` will
+  use the exact versions from `uv.lock`
+
 ### Testing
 
 ```bash
 # Run unit tests
-pytest
+uv run pytest
 
 # Run with coverage
-pytest --cov=semantic_tag_increment
+uv run pytest --cov=semantic_tag_increment
 
 # Run integration tests
-pytest tests/test_integration.py
+uv run pytest tests/test_integration.py
 
 # Run performance tests
-pytest tests/test_performance_optimizations.py
+uv run pytest tests/test_performance_optimizations.py
 ```
 
 ### Code Quality
@@ -347,10 +357,10 @@ pytest tests/test_performance_optimizations.py
 black src/ tests/
 
 # Lint code
-ruff check src/ tests/
+uv run ruff check .
 
 # Type checking
-mypy src/
+uv run mypy src/
 
 # Security checks
 bandit -r src/
