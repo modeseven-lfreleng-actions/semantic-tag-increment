@@ -174,4 +174,4 @@ debug-info: ## Show debug information
 	python -c "import semantic_tag_increment; print(semantic_tag_increment.__file__)" 2>/dev/null || echo "Package not installed"
 	@echo ""
 	@echo "Dependencies:"
-	uv pip list || pip list | grep -E "(typer|semantic)"
+	(uv pip list || pip list) | grep -E "(typer|semantic)"
