@@ -43,18 +43,22 @@ pip install semantic-tag-increment
 
 ### From Source
 
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) then run:
+
 ```bash
 git clone https://github.com/your-org/semantic-tag-increment.git
 cd semantic-tag-increment
-uv pip install --system .
+uv sync
 ```
 
 ### Development Installation
 
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) then run:
+
 ```bash
 git clone https://github.com/your-org/semantic-tag-increment.git
 cd semantic-tag-increment
-uv pip install --system -e .
+uv sync --all-extras
 ```
 
 ## Usage
@@ -314,10 +318,7 @@ With conflict checking enabled, the tool:
 git clone https://github.com/your-org/semantic-tag-increment.git
 cd semantic-tag-increment
 
-# Install in development mode
-uv pip install --system -e .
-
-# Install development dependencies
+# Install in development mode with all dependencies
 uv sync --all-extras
 
 # Set up pre-commit hooks
@@ -331,8 +332,8 @@ pre-commit install
   versions
 - **Add new dependencies**: Add to `pyproject.toml` then run
   `uv lock` to update the lock file
-- **Install from lock file**: `uv pip install --system .` will
-  use the exact versions from `uv.lock`
+- **Install from lock file**: `uv sync` will use the exact
+  versions from `uv.lock`
 
 ### Testing
 
@@ -354,7 +355,7 @@ uv run pytest tests/test_performance_optimizations.py
 
 ```bash
 # Format code
-black src/ tests/
+uv run ruff format src/ tests/
 
 # Lint code
 uv run ruff check .
@@ -363,7 +364,7 @@ uv run ruff check .
 uv run mypy src/
 
 # Security checks
-bandit -r src/
+uv run ruff check --select=S src/
 ```
 
 ### Performance
