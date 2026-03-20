@@ -12,7 +12,7 @@ help: ## Show this help message
 
 # Installation targets
 install: ## Install package in production mode
-	uv pip install --system .
+	uv sync
 
 install-dev: ## Install package in development mode with all dependencies
 	uv sync --all-extras
