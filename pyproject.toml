@@ -216,9 +216,3 @@ max-complexity = 10
 
 [tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"
-
-[dependency-groups]
-dev = [
-    "hatch-vcs>=0.5.0",
-    "hatchling>=1.28.0",
-]
