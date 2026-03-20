@@ -51,6 +51,10 @@ cd semantic-tag-increment
 uv sync
 ```
 
+> **Tip:** When installed from source via `uv sync`, run commands with
+> the `uv run` prefix (e.g. `uv run semantic-tag-increment --help`) or
+> activate the virtual environment first (`. .venv/bin/activate`).
+
 ### Development Installation
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/) then run:
