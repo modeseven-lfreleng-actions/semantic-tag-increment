@@ -80,48 +80,54 @@ jobs:
 
       - name: "Validate basic test results"
         shell: bash
+        env:
+          BASIC_PATCH_TAG: ${{ steps.basic-patch.outputs.tag }}
+          BASIC_MINOR_TAG: ${{ steps.basic-minor.outputs.tag }}
+          BASIC_MAJOR_TAG: ${{ steps.basic-major.outputs.tag }}
+          BASIC_PRERELEASE_TAG: ${{ steps.basic-prerelease.outputs.tag }}
+          BASIC_DEV_TAG: ${{ steps.basic-dev.outputs.tag }}
         run: |
           echo "🔍 Validating basic test results..."
 
           # Check patch increment
-          if [ "${{ steps.basic-patch.outputs.tag }}" != "v1.2.4" ]; then
-            echo "❌ Patch increment failed: expected v1.2.4, got ${{ steps.basic-patch.outputs.tag }}"
+          if [ "${BASIC_PATCH_TAG}" != "v1.2.4" ]; then
+            echo "❌ Patch increment failed: expected v1.2.4, got ${BASIC_PATCH_TAG}"
             exit 1
           fi
-          echo "✅ Patch: ${{ steps.basic-patch.outputs.tag }}"
+          echo "✅ Patch: ${BASIC_PATCH_TAG}"
 
           # Check minor increment
-          if [ "${{ steps.basic-minor.outputs.tag }}" != "v1.3.0" ]; then
-            echo "❌ Minor increment failed: expected v1.3.0, got ${{ steps.basic-minor.outputs.tag }}"
+          if [ "${BASIC_MINOR_TAG}" != "v1.3.0" ]; then
+            echo "❌ Minor increment failed: expected v1.3.0, got ${BASIC_MINOR_TAG}"
             exit 1
           fi
-          echo "✅ Minor: ${{ steps.basic-minor.outputs.tag }}"
+          echo "✅ Minor: ${BASIC_MINOR_TAG}"
 
           # Check major increment
-          if [ "${{ steps.basic-major.outputs.tag }}" != "v2.0.0" ]; then
-            echo "❌ Major increment failed: expected v2.0.0, got ${{ steps.basic-major.outputs.tag }}"
+          if [ "${BASIC_MAJOR_TAG}" != "v2.0.0" ]; then
+            echo "❌ Major increment failed: expected v2.0.0, got ${BASIC_MAJOR_TAG}"
             exit 1
           fi
-          echo "✅ Major: ${{ steps.basic-major.outputs.tag }}"
+          echo "✅ Major: ${BASIC_MAJOR_TAG}"
 
           # Check prerelease increment (should add .1 or similar)
-          case "${{ steps.basic-prerelease.outputs.tag }}" in
+          case "${BASIC_PRERELEASE_TAG}" in
             v1.2.4-dev.1|v1.2.4-alpha.1|v1.2.4-beta.1|v1.2.4-rc.1)
-              echo "✅ Prerelease: ${{ steps.basic-prerelease.outputs.tag }}"
+              echo "✅ Prerelease: ${BASIC_PRERELEASE_TAG}"
               ;;
             *)
-              echo "❌ Prerelease increment failed: unexpected format ${{ steps.basic-prerelease.outputs.tag }}"
+              echo "❌ Prerelease increment failed: unexpected format ${BASIC_PRERELEASE_TAG}"
               exit 1
               ;;
           esac
 
           # Check dev increment (similar to prerelease)
-          case "${{ steps.basic-dev.outputs.tag }}" in
+          case "${BASIC_DEV_TAG}" in
             v1.2.4-dev.1|v1.2.4-alpha.1|v1.2.4-beta.1|v1.2.4-rc.1)
-              echo "✅ Dev: ${{ steps.basic-dev.outputs.tag }}"
+              echo "✅ Dev: ${BASIC_DEV_TAG}"
               ;;
             *)
-              echo "❌ Dev increment failed: unexpected format ${{ steps.basic-dev.outputs.tag }}"
+              echo "❌ Dev increment failed: unexpected format ${BASIC_DEV_TAG}"
               exit 1
               ;;
           esac
@@ -178,49 +184,54 @@ jobs:
 
       - name: "Validate prerelease results"
         shell: bash
+        env:
+          PRERELEASE_ALPHA_TAG: ${{ steps.prerelease-alpha.outputs.tag }}
+          PRERELEASE_BETA_TAG: ${{ steps.prerelease-beta.outputs.tag }}
+          PRERELEASE_RC_TAG: ${{ steps.prerelease-rc.outputs.tag }}
+          INCREMENT_PRERELEASE_TAG: ${{ steps.increment-prerelease.outputs.tag }}
         run: |
           echo "🔍 Validating prerelease results..."
 
           # Alpha prerelease should contain alpha
-          case "${{ steps.prerelease-alpha.outputs.tag }}" in
+          case "${PRERELEASE_ALPHA_TAG}" in
             *alpha*)
-              echo "✅ Alpha prerelease: ${{ steps.prerelease-alpha.outputs.tag }}"
+              echo "✅ Alpha prerelease: ${PRERELEASE_ALPHA_TAG}"
               ;;
             *)
-              echo "❌ Alpha prerelease failed: expected alpha in tag, got ${{ steps.prerelease-alpha.outputs.tag }}"
+              echo "❌ Alpha prerelease failed: expected alpha in tag, got ${PRERELEASE_ALPHA_TAG}"
               exit 1
               ;;
           esac
 
           # Beta prerelease should contain beta
-          case "${{ steps.prerelease-beta.outputs.tag }}" in
+          case "${PRERELEASE_BETA_TAG}" in
             *beta*)
-              echo "✅ Beta prerelease: ${{ steps.prerelease-beta.outputs.tag }}"
+              echo "✅ Beta prerelease: ${PRERELEASE_BETA_TAG}"
               ;;
             *)
-              echo "❌ Beta prerelease failed: expected beta in tag, got ${{ steps.prerelease-beta.outputs.tag }}"
+              echo "❌ Beta prerelease failed: expected beta in tag, got ${PRERELEASE_BETA_TAG}"
               exit 1
               ;;
           esac
 
           # RC prerelease should contain rc
-          case "${{ steps.prerelease-rc.outputs.tag }}" in
+          case "${PRERELEASE_RC_TAG}" in
             *rc*)
-              echo "✅ RC prerelease: ${{ steps.prerelease-rc.outputs.tag }}"
+              echo "✅ RC prerelease: ${PRERELEASE_RC_TAG}"
               ;;
             *)
-              echo "❌ RC prerelease failed: expected rc in tag, got ${{ steps.prerelease-rc.outputs.tag }}"
+              echo "❌ RC prerelease failed: expected rc in tag, got ${PRERELEASE_RC_TAG}"
               exit 1
               ;;
           esac
 
           # Increment existing prerelease should bump the number
-          case "${{ steps.increment-prerelease.outputs.tag }}" in
+          case "${INCREMENT_PRERELEASE_TAG}" in
             v1.2.3-alpha.2|v1.2.3-alpha.1.1)
-              echo "✅ Increment prerelease: ${{ steps.increment-prerelease.outputs.tag }}"
+              echo "✅ Increment prerelease: ${INCREMENT_PRERELEASE_TAG}"
               ;;
             *)
-              echo "❌ Increment prerelease failed: unexpected result ${{ steps.increment-prerelease.outputs.tag }}"
+              echo "❌ Increment prerelease failed: unexpected result ${INCREMENT_PRERELEASE_TAG}"
               exit 1
               ;;
           esac
@@ -289,58 +300,65 @@ jobs:
 
       - name: "Validate edge case results"
         shell: bash
+        env:
+          NO_PREFIX_TAG: ${{ steps.no-prefix.outputs.tag }}
+          COMPLEX_PRERELEASE_TAG: ${{ steps.complex-prerelease.outputs.tag }}
+          ZERO_VERSION_TAG: ${{ steps.zero-version.outputs.tag }}
+          LARGE_VERSION_TAG: ${{ steps.large-version.outputs.tag }}
+          CUSTOM_PRERELEASE_TAG: ${{ steps.custom-prerelease.outputs.tag }}
+          BUILD_METADATA_TAG: ${{ steps.build-metadata.outputs.tag }}
         run: |
           echo "🔍 Validating edge case results..."
 
           # No prefix should work
-          if [ "${{ steps.no-prefix.outputs.tag }}" != "1.2.4" ]; then
-            echo "❌ No prefix failed: expected 1.2.4, got ${{ steps.no-prefix.outputs.tag }}"
+          if [ "${NO_PREFIX_TAG}" != "1.2.4" ]; then
+            echo "❌ No prefix failed: expected 1.2.4, got ${NO_PREFIX_TAG}"
             exit 1
           fi
-          echo "✅ No prefix: ${{ steps.no-prefix.outputs.tag }}"
+          echo "✅ No prefix: ${NO_PREFIX_TAG}"
 
           # Complex prerelease should increment
-          case "${{ steps.complex-prerelease.outputs.tag }}" in
+          case "${COMPLEX_PRERELEASE_TAG}" in
             v1.2.3-alpha.2*|v1.2.3-alpha.1.1*)
-              echo "✅ Complex prerelease: ${{ steps.complex-prerelease.outputs.tag }}"
+              echo "✅ Complex prerelease: ${COMPLEX_PRERELEASE_TAG}"
               ;;
             *)
-              echo "❌ Complex prerelease failed: unexpected ${{ steps.complex-prerelease.outputs.tag }}"
+              echo "❌ Complex prerelease failed: unexpected ${COMPLEX_PRERELEASE_TAG}"
               exit 1
               ;;
           esac
 
           # Zero version should work
-          if [ "${{ steps.zero-version.outputs.tag }}" != "v0.0.2" ]; then
-            echo "❌ Zero version failed: expected v0.0.2, got ${{ steps.zero-version.outputs.tag }}"
+          if [ "${ZERO_VERSION_TAG}" != "v0.0.2" ]; then
+            echo "❌ Zero version failed: expected v0.0.2, got ${ZERO_VERSION_TAG}"
             exit 1
           fi
-          echo "✅ Zero version: ${{ steps.zero-version.outputs.tag }}"
+          echo "✅ Zero version: ${ZERO_VERSION_TAG}"
 
           # Large version numbers
-          if [ "${{ steps.large-version.outputs.tag }}" != "v10.21.0" ]; then
-            echo "❌ Large version failed: expected v10.21.0, got ${{ steps.large-version.outputs.tag }}"
+          if [ "${LARGE_VERSION_TAG}" != "v10.21.0" ]; then
+            echo "❌ Large version failed: expected v10.21.0, got ${LARGE_VERSION_TAG}"
             exit 1
           fi
-          echo "✅ Large version: ${{ steps.large-version.outputs.tag }}"
+          echo "✅ Large version: ${LARGE_VERSION_TAG}"
 
           # Custom prerelease type should be included
-          case "${{ steps.custom-prerelease.outputs.tag }}" in
+          case "${CUSTOM_PRERELEASE_TAG}" in
             *snapshot*)
-              echo "✅ Custom prerelease: ${{ steps.custom-prerelease.outputs.tag }}"
+              echo "✅ Custom prerelease: ${CUSTOM_PRERELEASE_TAG}"
               ;;
             *)
-              echo "❌ Custom prerelease failed: expected snapshot in tag, got ${{ steps.custom-prerelease.outputs.tag }}"
+              echo "❌ Custom prerelease failed: expected snapshot in tag, got ${CUSTOM_PRERELEASE_TAG}"
               exit 1
               ;;
           esac
 
           # Build metadata should be handled correctly
-          if [ "${{ steps.build-metadata.outputs.tag }}" != "v1.2.4" ]; then
-            echo "❌ Build metadata failed: expected v1.2.4, got ${{ steps.build-metadata.outputs.tag }}"
+          if [ "${BUILD_METADATA_TAG}" != "v1.2.4" ]; then
+            echo "❌ Build metadata failed: expected v1.2.4, got ${BUILD_METADATA_TAG}"
             exit 1
           fi
-          echo "✅ Build metadata: ${{ steps.build-metadata.outputs.tag }}"
+          echo "✅ Build metadata: ${BUILD_METADATA_TAG}"
 
   error-handling-tests:
     name: 'Error Handling Tests'
@@ -388,23 +406,27 @@ jobs:
 
       - name: "Validate error handling"
         shell: bash
+        env:
+          INVALID_TAG_OUTCOME: ${{ steps.invalid-tag.outcome }}
+          INVALID_INCREMENT_OUTCOME: ${{ steps.invalid-increment.outcome }}
+          INVALID_PATH_OUTCOME: ${{ steps.invalid-path.outcome }}
         run: |
           echo "🔍 Validating error handling..."
 
           # All error tests should fail
-          if [ "${{ steps.invalid-tag.outcome }}" = "success" ]; then
+          if [ "${INVALID_TAG_OUTCOME}" = "success" ]; then
             echo "❌ Invalid tag test should have failed"
             exit 1
           fi
           echo "✅ Invalid tag correctly failed"
 
-          if [ "${{ steps.invalid-increment.outcome }}" = "success" ]; then
+          if [ "${INVALID_INCREMENT_OUTCOME}" = "success" ]; then
             echo "❌ Invalid increment test should have failed"
             exit 1
           fi
           echo "✅ Invalid increment correctly failed"
 
-          if [ "${{ steps.invalid-path.outcome }}" = "success" ]; then
+          if [ "${INVALID_PATH_OUTCOME}" = "success" ]; then
             echo "❌ Invalid path test should have failed"
             exit 1
           fi
@@ -445,34 +467,39 @@ jobs:
 
       - name: "Validate outputs"
         shell: bash
+        env:
+          V_PREFIX_TAG: ${{ steps.v-prefix.outputs.tag }}
+          V_PREFIX_NUMERIC_TAG: ${{ steps.v-prefix.outputs.numeric_tag }}
+          NO_PREFIX_TAG: ${{ steps.no-prefix.outputs.tag }}
+          NO_PREFIX_NUMERIC_TAG: ${{ steps.no-prefix.outputs.numeric_tag }}
         run: |
           echo "🔍 Validating output formats..."
 
           # Test outputs for V prefix
-          echo "V prefix full: ${{ steps.v-prefix.outputs.tag }}"
-          echo "V prefix numeric: ${{ steps.v-prefix.outputs.numeric_tag }}"
+          echo "V prefix full: ${V_PREFIX_TAG}"
+          echo "V prefix numeric: ${V_PREFIX_NUMERIC_TAG}"
 
           # Test outputs for no prefix
-          echo "No prefix full: ${{ steps.no-prefix.outputs.tag }}"
-          echo "No prefix numeric: ${{ steps.no-prefix.outputs.numeric_tag }}"
+          echo "No prefix full: ${NO_PREFIX_TAG}"
+          echo "No prefix numeric: ${NO_PREFIX_NUMERIC_TAG}"
 
           # Validate numeric outputs don't have prefixes
-          case "${{ steps.v-prefix.outputs.numeric_tag }}" in
+          case "${V_PREFIX_NUMERIC_TAG}" in
             [0-9]*)
-              echo "✅ V prefix numeric output correct: ${{ steps.v-prefix.outputs.numeric_tag }}"
+              echo "✅ V prefix numeric output correct: ${V_PREFIX_NUMERIC_TAG}"
               ;;
             *)
-              echo "❌ V prefix numeric should not have prefix: ${{ steps.v-prefix.outputs.numeric_tag }}"
+              echo "❌ V prefix numeric should not have prefix: ${V_PREFIX_NUMERIC_TAG}"
               exit 1
               ;;
           esac
 
-          case "${{ steps.no-prefix.outputs.numeric_tag }}" in
+          case "${NO_PREFIX_NUMERIC_TAG}" in
             [0-9]*)
-              echo "✅ No prefix numeric output correct: ${{ steps.no-prefix.outputs.numeric_tag }}"
+              echo "✅ No prefix numeric output correct: ${NO_PREFIX_NUMERIC_TAG}"
               ;;
             *)
-              echo "❌ No prefix numeric should be numeric: ${{ steps.no-prefix.outputs.numeric_tag }}"
+              echo "❌ No prefix numeric should be numeric: ${NO_PREFIX_NUMERIC_TAG}"
               exit 1
               ;;
           esac
@@ -525,26 +552,30 @@ jobs:
 
       - name: "Validate performance results"
         shell: bash
+        env:
+          FAST_EXECUTION_TAG: ${{ steps.fast-execution.outputs.tag }}
+          GIT_CHECKS_TAG: ${{ steps.git-checks.outputs.tag }}
+          DEBUG_MODE_TAG: ${{ steps.debug-mode.outputs.tag }}
         run: |
           echo "🔍 Validating performance test results..."
 
           # All should complete successfully
-          echo "✅ Fast execution: ${{ steps.fast-execution.outputs.tag }}"
-          echo "✅ Git checks: ${{ steps.git-checks.outputs.tag }}"
-          echo "✅ Debug mode: ${{ steps.debug-mode.outputs.tag }}"
+          echo "✅ Fast execution: ${FAST_EXECUTION_TAG}"
+          echo "✅ Git checks: ${GIT_CHECKS_TAG}"
+          echo "✅ Debug mode: ${DEBUG_MODE_TAG}"
 
           # Results should be as expected
-          if [ "${{ steps.fast-execution.outputs.tag }}" != "v1.2.4" ]; then
+          if [ "${FAST_EXECUTION_TAG}" != "v1.2.4" ]; then
             echo "❌ Fast execution failed"
             exit 1
           fi
 
-          if [ "${{ steps.git-checks.outputs.tag }}" != "v1.3.0" ]; then
+          if [ "${GIT_CHECKS_TAG}" != "v1.3.0" ]; then
             echo "❌ Git checks failed"
             exit 1
           fi
 
-          if [ "${{ steps.debug-mode.outputs.tag }}" != "v2.0.0" ]; then
+          if [ "${DEBUG_MODE_TAG}" != "v2.0.0" ]; then
             echo "❌ Debug mode failed"
             exit 1
           fi
