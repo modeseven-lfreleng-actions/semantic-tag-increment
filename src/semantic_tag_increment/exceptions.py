@@ -17,6 +17,8 @@ from typing import NoReturn, ParamSpec, TypeVar
 import click
 import typer
 
+from .workflow_output import error as emit_workflow_error
+
 logger = logging.getLogger(__name__)
 
 # ParamSpec/TypeVar pair for preserving decorated callable signatures.
@@ -27,9 +29,7 @@ R = TypeVar("R")
 class SemanticVersionError(Exception):
     """Base exception for all semantic version operations."""
 
-    def __init__(
-        self, message: str, details: dict[str, object] | None = None
-    ):
+    def __init__(self, message: str, details: dict[str, object] | None = None):
         """
         Initialize semantic version error.
 
@@ -61,9 +61,7 @@ class ParseError(  # pyright: ignore[reportUnsafeMultipleInheritance]
     to set ``message``/``details``.
     """
 
-    def __init__(
-        self, message: str, details: dict[str, object] | None = None
-    ):
+    def __init__(self, message: str, details: dict[str, object] | None = None):
         """Initialise both parent classes with the supplied message."""
         SemanticVersionError.__init__(self, message, details)
 
@@ -157,7 +155,7 @@ def handle_github_actions_errors(func: Callable[P, R]) -> Callable[P, R]:
             _handle_semantic_error_gha(e)
         except Exception as e:
             logger.error(f"Unexpected error: {e}", exc_info=True)
-            print(f"::error::Unexpected Error: {e}")
+            emit_workflow_error(f"Unexpected Error: {e}")
             sys.exit(1)
 
     return wrapper
@@ -169,7 +167,7 @@ def _handle_semantic_error_gha(error: SemanticVersionError) -> NoReturn:
     logger.error(f"{error_type} error: {error}")
     if error.details:
         logger.debug(f"Error details: {error.details}")
-    print(f"::error::{error_type} Error: {error}")
+    emit_workflow_error(f"{error_type} Error: {error}")
     sys.exit(1)
 
 

@@ -18,7 +18,9 @@ class LoggingConfig:
     """Handles logging configuration for the application."""
 
     @staticmethod
-    def setup_logging(debug: bool = False, suppress_console: bool = False) -> None:
+    def setup_logging(
+        debug: bool = False, suppress_console: bool = False
+    ) -> None:
         """
         Configure logging based on the application mode.
 
@@ -28,7 +30,6 @@ class LoggingConfig:
         """
         level = logging.DEBUG if debug else logging.INFO
 
-        # Configure root logger
         root_logger = logging.getLogger()
         root_logger.setLevel(logging.DEBUG)
         root_logger.handlers.clear()
@@ -109,9 +110,13 @@ class SemanticLogger:
 
         # Calculate elapsed time if available
         elapsed_time = None
-        if (SemanticLogger._operation_times and
-            operation in SemanticLogger._operation_times):
-            elapsed_time = time.time() - SemanticLogger._operation_times[operation]
+        if (
+            SemanticLogger._operation_times
+            and operation in SemanticLogger._operation_times
+        ):
+            elapsed_time = (
+                time.time() - SemanticLogger._operation_times[operation]
+            )
             del SemanticLogger._operation_times[operation]
 
         message = f"Completed operation: {operation}"
@@ -143,9 +148,13 @@ class SemanticLogger:
 
         # Calculate elapsed time if available
         elapsed_time = None
-        if (hasattr(SemanticLogger, '_operation_times') and
-            operation in SemanticLogger._operation_times):
-            elapsed_time = time.time() - SemanticLogger._operation_times[operation]
+        if (
+            hasattr(SemanticLogger, "_operation_times")
+            and operation in SemanticLogger._operation_times
+        ):
+            elapsed_time = (
+                time.time() - SemanticLogger._operation_times[operation]
+            )
             del SemanticLogger._operation_times[operation]
 
         message = f"Failed operation: {operation} - {error}"
@@ -160,7 +169,9 @@ class SemanticLogger:
         logger.error(message, exc_info=True)
 
     @staticmethod
-    def performance_metric(metric_name: str, value: float, unit: str = "ms") -> None:
+    def performance_metric(
+        metric_name: str, value: float, unit: str = "ms"
+    ) -> None:
         """
         Log a performance metric.
 
@@ -186,7 +197,9 @@ class SemanticLogger:
         logger.warning(f"Security event: {event_type} | {detail_str}")
 
     @staticmethod
-    def version_operation(operation: str, version_before: str, version_after: str | None = None) -> None:
+    def version_operation(
+        operation: str, version_before: str, version_after: str | None = None
+    ) -> None:
         """
         Log version-specific operations.
 
@@ -198,7 +211,9 @@ class SemanticLogger:
         logger = logging.getLogger(__name__)
 
         if version_after:
-            message = f"Version {operation}: {version_before} -> {version_after}"
+            message = (
+                f"Version {operation}: {version_before} -> {version_after}"
+            )
         else:
             message = f"Version {operation}: {version_before}"
 

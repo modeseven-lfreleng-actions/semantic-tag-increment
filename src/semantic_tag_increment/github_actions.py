@@ -10,6 +10,7 @@ for string-mode tag incrementing only.
 
 import logging
 import time
+from dataclasses import dataclass
 from typing import TypedDict
 
 from .app_context import GitHubActionsConfig
@@ -20,6 +21,7 @@ from .io_operations import IOOperations
 from .logging_config import LoggingConfig, SemanticLogger
 from .modes import ModeValidator, OperationMode
 from .parser import SemanticVersion
+from .workflow_output import echo, group_end, group_start, notice
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +33,16 @@ class IncrementResult(TypedDict):
     incremented_version: SemanticVersion
     increment_type: IncrementType
     existing_tags: set[str]
+
+
+@dataclass(frozen=True)
+class IncrementSettings:
+    """Typed view of the GitHub Actions inputs that govern the increment."""
+
+    check_tags: bool
+    path: str
+    preserve_metadata: bool
+    fetch_timeout: int
 
 
 class GitHubActionsRunner:
@@ -124,24 +136,166 @@ class GitHubActionsRunner:
 
     def _print_startup_banner(self, config: dict[str, str | None]) -> None:
         """Print startup banner and configuration."""
-        print("::group::Semantic Tag Increment Configuration")
-        print("Semantic Tag Increment")
-        print("=" * 50)
-        print("Configuration:")
-        print("   Mode: string")
-        print(f"   Tag: {config.get('tag', 'Not specified')}")
-        print(f"   Increment: {config.get('increment', 'dev')}")
+        group_start("Semantic Tag Increment Configuration")
+        echo("Semantic Tag Increment")
+        echo("=" * 50)
+        echo("Configuration:")
+        echo("   Mode: string")
+        echo(f"   Tag: {config.get('tag', 'Not specified')}")
+        echo(f"   Increment: {config.get('increment', 'dev')}")
         if config.get("prerelease_type"):
-            print(f"   Prerelease Type: {config['prerelease_type']}")
-        print(f"   Path: {config.get('path', '.')}")
-        print(f"   Check Tags: {config.get('check_tags', 'true')}")
-        print(
+            echo(f"   Prerelease Type: {config['prerelease_type']}")
+        echo(f"   Path: {config.get('path', '.')}")
+        echo(f"   Check Tags: {config.get('check_tags', 'true')}")
+        echo(
             f"   Preserve Metadata: {config.get('preserve_metadata', 'false')}"
         )
-        print(f"   Fetch Timeout: {config.get('fetch_timeout', '120')} seconds")
-        print("=" * 50)
-        print("::endgroup::")
-        print()
+        echo(f"   Fetch Timeout: {config.get('fetch_timeout', '120')} seconds")
+        echo("=" * 50)
+        group_end()
+        echo()
+
+    def _resolve_version_source(
+        self, config: dict[str, str | None]
+    ) -> tuple[SemanticVersion, IncrementType]:
+        """
+        Parse the source tag and the requested increment type.
+
+        Args:
+            config: Configuration dictionary
+
+        Returns:
+            The parsed source version and the increment type to apply.
+
+        Raises:
+            ValueError: If the 'tag' input is missing.
+        """
+        group_start("Version Source")
+        tag = config.get("tag")
+        if not tag:
+            raise ValueError("Tag is required for string mode")
+
+        original_version = SemanticVersion.parse(tag)
+        echo("Version source: input tag")
+        echo(f"Version: {original_version}")
+
+        increment_str = config.get("increment", "dev")
+        if increment_str is None:
+            increment_str = "dev"
+        increment_type = VersionIncrementer.determine_increment_type(
+            increment_str
+        )
+        echo(f"Increment type: {increment_type.value}")
+        group_end()
+
+        return original_version, increment_type
+
+    @staticmethod
+    def _read_settings(config: dict[str, str | None]) -> IncrementSettings:
+        """
+        Coerce the raw string inputs into typed increment settings.
+
+        Args:
+            config: Configuration dictionary
+
+        Returns:
+            The resolved settings, with defaults applied.
+        """
+        check_tags_str = config.get("check_tags", "true")
+        preserve_metadata_str = config.get("preserve_metadata", "false")
+
+        fetch_timeout_str = config.get("fetch_timeout", "120")
+        try:
+            fetch_timeout = int(fetch_timeout_str) if fetch_timeout_str else 120
+        except ValueError:
+            logger.warning(
+                f"Invalid fetch_timeout value: {fetch_timeout_str}, using default 120"
+            )
+            fetch_timeout = 120
+
+        return IncrementSettings(
+            check_tags=(
+                check_tags_str is not None and check_tags_str.lower() == "true"
+            ),
+            path=config.get("path", ".") or ".",
+            preserve_metadata=(
+                preserve_metadata_str is not None
+                and preserve_metadata_str.lower() == "true"
+            ),
+            fetch_timeout=fetch_timeout,
+        )
+
+    @staticmethod
+    def _collect_existing_tags(settings: IncrementSettings) -> set[str]:
+        """
+        Read the existing git tags used for conflict checking.
+
+        A git failure is not fatal: the increment still runs, just
+        without conflict checking, so a shallow or tagless checkout
+        degrades gracefully instead of failing the workflow.
+
+        Args:
+            settings: Resolved increment settings
+
+        Returns:
+            Existing tag names, or an empty set when checking is
+            disabled or the git lookup fails.
+        """
+        if not settings.check_tags:
+            echo("Tag checking disabled - proceeding without conflict checking")
+            return set()
+
+        try:
+            tag_start_time = time.time()
+            existing_tags = GitOperations.get_existing_tags(
+                settings.path, timeout=settings.fetch_timeout
+            )
+            tag_time = time.time() - tag_start_time
+        except Exception as e:
+            logger.warning(f"Error with git operations: {e}")
+            echo(f"Git operation failed: {e}")
+            echo("Proceeding without conflict checking")
+            return set()
+
+        echo(f"Retrieved {len(existing_tags)} existing git tags")
+        SemanticLogger.performance_metric(
+            "git_tag_retrieval", tag_time * 1000, "ms"
+        )
+        return existing_tags
+
+    @staticmethod
+    def _apply_increment(
+        incrementer: VersionIncrementer,
+        original_version: SemanticVersion,
+        increment_type: IncrementType,
+        prerelease_type: str | None,
+    ) -> SemanticVersion:
+        """
+        Run the increment and record its timing.
+
+        Args:
+            incrementer: Incrementer primed with the existing tags
+            original_version: Version parsed from the input tag
+            increment_type: Increment to apply
+            prerelease_type: Optional pre-release identifier to use
+
+        Returns:
+            The incremented version.
+        """
+        increment_start_time = time.time()
+        incremented_version = incrementer.increment(
+            original_version, increment_type, prerelease_type
+        )
+        increment_time = time.time() - increment_start_time
+
+        echo("Incremented version successfully")
+        SemanticLogger.performance_metric(
+            "version_increment", increment_time * 1000, "ms"
+        )
+        SemanticLogger.version_operation(
+            "increment", str(original_version), str(incremented_version)
+        )
+        return incremented_version
 
     def _execute_increment(
         self, config: dict[str, str | None]
@@ -155,98 +309,25 @@ class GitHubActionsRunner:
         Returns:
             Dictionary containing the increment results
         """
-        print("::group::Version Source")
-        tag = config.get("tag")
-        if not tag:
-            raise ValueError("Tag is required for string mode")
+        original_version, increment_type = self._resolve_version_source(config)
+        settings = self._read_settings(config)
 
-        original_version = SemanticVersion.parse(tag)
-        print("Version source: input tag")
-        print(f"Version: {original_version}")
+        group_start("Git Operations")
+        existing_tags = self._collect_existing_tags(settings)
+        group_end()
 
-        increment_str = config.get("increment", "dev")
-        if increment_str is None:
-            increment_str = "dev"
-        increment_type = VersionIncrementer.determine_increment_type(
-            increment_str
-        )
-        print(f"Increment type: {increment_type.value}")
-        print("::endgroup::")
-
-        # Get existing tags for conflict checking (conditional)
-        existing_tags: set[str]
-        check_tags_str = config.get("check_tags", "true")
-        check_tags = (
-            check_tags_str is not None and check_tags_str.lower() == "true"
-        )
-        path = config.get("path", ".") or "."
-
-        preserve_metadata_str = config.get("preserve_metadata", "false")
-        preserve_metadata = (
-            preserve_metadata_str is not None
-            and preserve_metadata_str.lower() == "true"
+        incrementer = VersionIncrementer(
+            existing_tags, preserve_metadata=settings.preserve_metadata
         )
 
-        fetch_timeout_str = config.get("fetch_timeout", "120")
-        try:
-            fetch_timeout = int(fetch_timeout_str) if fetch_timeout_str else 120
-        except ValueError:
-            logger.warning(
-                f"Invalid fetch_timeout value: {fetch_timeout_str}, using default 120"
-            )
-            fetch_timeout = 120
-
-        print("::group::Git Operations")
-        if check_tags:
-            try:
-                tag_start_time = time.time()
-                existing_tags = GitOperations.get_existing_tags(
-                    path, timeout=fetch_timeout
-                )
-                tag_time = time.time() - tag_start_time
-
-                print(f"Retrieved {len(existing_tags)} existing git tags")
-                SemanticLogger.performance_metric(
-                    "git_tag_retrieval", tag_time * 1000, "ms"
-                )
-
-                incrementer = VersionIncrementer(
-                    existing_tags, preserve_metadata=preserve_metadata
-                )
-            except Exception as e:
-                logger.warning(f"Error with git operations: {e}")
-                print(f"Git operation failed: {e}")
-                print("Proceeding without conflict checking")
-                existing_tags = set()
-                incrementer = VersionIncrementer(
-                    existing_tags, preserve_metadata=preserve_metadata
-                )
-        else:
-            print(
-                "Tag checking disabled - proceeding without conflict checking"
-            )
-            existing_tags = set()
-            incrementer = VersionIncrementer(
-                existing_tags, preserve_metadata=preserve_metadata
-            )
-        print("::endgroup::")
-
-        # Perform increment
-        print("::group::Version Increment")
-        increment_start_time = time.time()
-        incremented_version = incrementer.increment(
-            original_version, increment_type, config.get("prerelease_type")
+        group_start("Version Increment")
+        incremented_version = self._apply_increment(
+            incrementer,
+            original_version,
+            increment_type,
+            config.get("prerelease_type"),
         )
-        increment_time = time.time() - increment_start_time
-
-        print("Incremented version successfully")
-        SemanticLogger.performance_metric(
-            "version_increment", increment_time * 1000, "ms"
-        )
-        SemanticLogger.version_operation(
-            "increment", str(original_version), str(incremented_version)
-        )
-        print("::endgroup::")
+        group_end()
 
         self._log_operation_details(
             original_version, incremented_version, existing_tags
@@ -264,7 +345,7 @@ class GitHubActionsRunner:
         result: IncrementResult,
     ) -> None:
         """Output results to GitHub Actions."""
-        print("::group::Results")
+        group_start("Results")
         incremented_version = result["incremented_version"]
 
         # Prepare outputs
@@ -273,24 +354,25 @@ class GitHubActionsRunner:
 
         IOOperations.write_outputs_to_github(full_version, numeric_version)
 
-        print(f"Original version: {result['original_version']}")
-        print(f"Next version:     {full_version}")
-        print(f"Numeric version:  {numeric_version}")
+        echo(f"Original version: {result['original_version']}")
+        echo(f"Next version:     {full_version}")
+        echo(f"Numeric version:  {numeric_version}")
 
         # Add GitHub Actions notice for visibility
-        print(
-            f"::notice title=Version Increment Complete::Original: {result['original_version']} -> New: {full_version}"
+        notice(
+            "Version Increment Complete",
+            f"Original: {result['original_version']} -> New: {full_version}",
         )
-        print("::endgroup::")
+        group_end()
 
     def _print_success_banner(self) -> None:
         """Print success banner."""
-        print()
-        print("::group::Success")
-        print("Semantic Tag Increment")
-        print("=" * 50)
-        print("Version increment completed successfully!")
-        print("::endgroup::")
+        echo()
+        group_start("Success")
+        echo("Semantic Tag Increment")
+        echo("=" * 50)
+        echo("Version increment completed successfully!")
+        group_end()
         logger.info("GitHub Actions execution completed successfully")
 
     def _log_operation_details(

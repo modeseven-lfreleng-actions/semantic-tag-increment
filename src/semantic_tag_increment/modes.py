@@ -59,9 +59,7 @@ class ModeValidator:
 
         # Warn about ignored parameters
         if path and path.strip() and path.strip() != ".":
-            logger.warning(
-                "String mode: 'path' input is ignored in this mode"
-            )
+            logger.warning("String mode: 'path' input is ignored in this mode")
 
     @staticmethod
     def _raise_unsupported_mode_error(mode: OperationMode) -> NoReturn:
@@ -91,8 +89,7 @@ class ModeHelper:
         """
         if not isinstance(mode_str, str):  # pyright: ignore[reportUnnecessaryIsInstance]
             ErrorReporter.log_and_raise_validation_error(  # pyright: ignore[reportUnreachable]
-                "Mode must be a string,"
-                + f" got {type(mode_str).__name__}"
+                "Mode must be a string," + f" got {type(mode_str).__name__}"
             )
 
         if not mode_str:
@@ -132,9 +129,7 @@ class ModeHelper:
         raise ValueError(f"Unknown mode: {mode.value}")  # pyright: ignore[reportUnreachable]
 
     @staticmethod
-    def should_check_git_tags(
-        mode: OperationMode, check_tags: bool
-    ) -> bool:
+    def should_check_git_tags(mode: OperationMode, check_tags: bool) -> bool:
         """
         Determine if Git tag checking should be performed.
 
@@ -151,9 +146,7 @@ class ModeHelper:
         raise AssertionError(f"Unhandled mode: {mode}")  # pyright: ignore[reportUnreachable]
 
     @staticmethod
-    def get_effective_path(
-        mode: OperationMode, path: str | None
-    ) -> str:
+    def get_effective_path(mode: OperationMode, path: str | None) -> str:
         """
         Get the effective path to use for Git operations.
 

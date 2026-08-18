@@ -92,7 +92,6 @@ class GitOperations:
             Set of existing git tags, or empty set if unable to retrieve
         """
         try:
-            # Validate path for security
             validated_path = GitOperations._validate_path(path_prefix)
         except SecurityError as e:
             logger.warning(f"Invalid path provided: {e}")
@@ -187,7 +186,6 @@ class GitOperations:
             True if in a Git repository, False otherwise
         """
         try:
-            # Validate path for security
             validated_path = GitOperations._validate_path(path_prefix)
         except SecurityError:
             return False

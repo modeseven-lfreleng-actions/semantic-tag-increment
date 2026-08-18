@@ -73,11 +73,10 @@ class ContextDetector:
     @staticmethod
     def _get_debug_mode() -> bool:
         """Determine if debug mode should be enabled."""
-        # Check CLI debug flag first
+        # An explicit --debug flag wins over the Actions input below.
         if "--debug" in sys.argv:
             return True
 
-        # Check GitHub Actions debug input
         if IOOperations.is_github_actions():
             debug_input = IOOperations.get_env_var("INPUT_DEBUG", "false")
             if debug_input:
