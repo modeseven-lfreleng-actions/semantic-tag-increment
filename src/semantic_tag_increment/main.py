@@ -24,10 +24,8 @@ def main() -> None:
     context = ContextDetector.detect_context()
 
     if context.is_cli_mode:
-        # Running as CLI tool - use Typer interface
         app()
     else:
-        # Running in GitHub Actions mode
         runner = GitHubActionsRunner(debug_mode=context.debug_mode)
         runner.run()
 

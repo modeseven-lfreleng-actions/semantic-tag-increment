@@ -140,7 +140,6 @@ class ConfigurationManager:
                 f"Configuration directory is not writable: {self.config_dir}"
             )
 
-        # Validate general configuration file
         try:
             _ = self.load_general_config()
         except Exception as e:

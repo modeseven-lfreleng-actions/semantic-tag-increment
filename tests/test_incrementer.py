@@ -222,6 +222,41 @@ class TestPrereleaseIncrement:
         assert result.patch == 4
         assert result.prerelease == "alpha.1"
 
+    def test_first_prerelease_fallback_defaults_identifier(self) -> None:
+        """Test the exhausted-search fallback without an explicit type."""
+        # Occupy every candidate the forward search considers, so the
+        # fallback at the end of _create_first_prerelease is the only
+        # remaining outcome.
+        existing_tags = {
+            f"1.2.{patch}-dev.{counter}"
+            for patch in range(4, 4 + 5)
+            for counter in range(1, VersionIncrementer.MAX_PATCH_ATTEMPTS + 1)
+        }
+        incrementer = VersionIncrementer(existing_tags=existing_tags)
+        version = SemanticVersion.parse("1.2.3")
+
+        result = incrementer.increment(version, IncrementType.PRERELEASE)
+
+        # "dev" is the default identifier; the fallback must not leak the
+        # unset prerelease_type argument into the version string.
+        assert result.prerelease == "dev.1"
+
+    def test_first_prerelease_fallback_keeps_explicit_type(self) -> None:
+        """Test the exhausted-search fallback with an explicit type."""
+        existing_tags = {
+            f"1.2.{patch}-alpha.{counter}"
+            for patch in range(4, 4 + 5)
+            for counter in range(1, VersionIncrementer.MAX_PATCH_ATTEMPTS + 1)
+        }
+        incrementer = VersionIncrementer(existing_tags=existing_tags)
+        version = SemanticVersion.parse("1.2.3")
+
+        result = incrementer.increment(
+            version, IncrementType.PRERELEASE, "alpha"
+        )
+
+        assert result.prerelease == "alpha.1"
+
     def test_increment_existing_prerelease_with_number(self) -> None:
         """Test incrementing existing prerelease with numeric component."""
         incrementer = VersionIncrementer()
